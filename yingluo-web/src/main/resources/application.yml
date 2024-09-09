@@ -1,0 +1,75 @@
+server:
+  port: 8080
+  servlet:
+    encoding:
+      charset: utf-8
+      enabled: true
+      force: true
+    register-default-servlet: true
+
+spring:
+  profiles:
+    active: dev
+  config:
+    import:
+      - optional:nacos:yingluo-common-connection.yml
+      - optional:nacos:yingluo-common.yml
+  application:
+    name: yingluo-web
+  main:
+    allow-bean-definition-overriding: true
+    allow-circular-references: true
+  cloud:
+    nacos:
+      username: nacos
+      password: nacos
+      server-addr: nacos:8848
+      discovery:
+        metadata:
+          management:
+            ##配置元数据解决SpringBoot Admin无法正常监控问题
+            context-path: ${server.servlet.context-path}/actuator
+    function:
+      ##多个用;分隔
+      definition: seckillResult;seckillCanalResult
+    stream:
+      bindings:
+        ##配置消息绑定
+        seckill-out-0:
+          destination: seckill
+        seckillResult-in-0:
+          ##解决重复消费问题，注意：同一组下只消费一次
+          group: default
+          destination: seckill-result
+        seckillCanalResult-in-0:
+          ##解决重复消费问题，注意：同一组下只消费一次
+          group: default
+          destination: seckill-canal-result
+
+##dubbo配置
+dubbo:
+  protocol:
+    name: dubbo
+    port: -1
+  consumer:
+    timeout: 30000
+    check: false
+  application:
+    enable-file-cache: false
+    qos-port: 22224
+
+springdoc:
+  version: '@springdoc.version@'
+  swagger-ui:
+    display-request-duration: true
+    groups-order: DESC
+    operationsSorter: method
+    disable-swagger-default-url: true
+    use-root-path: true
+  show-actuator: true
+  group-configs:
+    - group: web
+      paths-to-match: /**
+
+
+

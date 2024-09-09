@@ -1,0 +1,2 @@
+com.yingluo.autoconfigure.oauth2.GkOAuth2ClientAutoConfiguration
+com.yingluo.autoconfigure.oss.MinioAutoConfiguration

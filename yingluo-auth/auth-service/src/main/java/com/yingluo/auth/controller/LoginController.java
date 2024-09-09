@@ -1,0 +1,74 @@
+package com.yingluo.auth.controller;
+
+import cn.dev33.satoken.stp.SaTokenInfo;
+import cn.dev33.satoken.stp.StpUtil;
+import com.yingluo.auth.entity.User;
+import com.yingluo.auth.pojo.dto.UserDTO;
+import com.yingluo.auth.service.UserService;
+import com.yingluo.core.info.Result;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.annotation.Resource;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+/**
+ * 登录测试
+ */
+@RestController
+@Tag(name = "登录测试")
+public class LoginController {
+    @Resource
+    private UserService userService;
+
+    /**
+     * 测试登录
+     *
+     * @return
+     */
+    @RequestMapping("/isLogin")
+    @Operation(summary = "测试登录")
+    public Result<String> isLogin(HttpServletRequest request) {
+        return Result.ok("是否登录：" + StpUtil.isLogin());
+    }
+
+    @RequestMapping("/tokenInfo")
+    @Operation(summary = "获取token信息")
+    public Result<SaTokenInfo> tokenInfo() {
+        return Result.ok(StpUtil.getTokenInfo());
+    }
+
+    @PostMapping("/logout")
+    @Operation(summary = "退出登录")
+    public Result<String> logout() {
+        StpUtil.logout();
+        return Result.ok();
+    }
+
+    @PostMapping("/register")
+    @Operation(summary = "注册")
+    public Result<String> register(@RequestBody UserDTO userDTO) {
+        userService.register(userDTO);
+        return Result.ok("注册成功");
+    }
+
+    @PostMapping("/login")
+    @Operation(summary = "登录")
+    public Result<String> login(@RequestBody UserDTO userDTO) {
+        User userAccount = userService.findByUserAccount(userDTO.getUsername());
+        if (userAccount != null) {
+            // 校验账户与用户输入的密码是否一致
+            boolean b = userService.checkPassword(userAccount.getPassword(), userDTO.getPassword());
+            if (!b) {
+                return Result.fail("用户名或密码错误");
+            }
+            StpUtil.login(userAccount.getId());
+            return Result.ok(StpUtil.getTokenInfo().getTokenValue());
+        }
+        return Result.fail("用户名或密码错误");
+    }
+
+}

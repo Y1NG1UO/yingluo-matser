@@ -1,0 +1,2 @@
+org.springframework.boot.diagnostics.FailureAnalyzer=\
+com.yingluo.service.impl.ApplicationStartFailureAnalyzer

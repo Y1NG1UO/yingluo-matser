@@ -1,0 +1,9 @@
+server {
+    listen       80;
+    server_name  www.yingluo.com;
+
+    location /yingluo/web/ {
+        proxy_pass  http://gheng.vaiwan.cn/yingluo/web/;
+    }
+
+}

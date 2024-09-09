@@ -1,0 +1,138 @@
+server:
+  port: 80
+spring:
+  profiles:
+    active: dev
+  application:
+    name: yingluo-gateway
+  config:
+    import:
+      - optional:nacos:yingluo-common-connection.yml
+      - optional:nacos:yingluo-common.yml
+  main:
+    allow-bean-definition-overriding: true
+  cloud:
+    nacos:
+      username: nacos
+      password: nacos
+      server-addr: nacos:8848
+    sentinel:
+      filter:
+        ## 网关服务此项需配置为false（若在网关流控控制台上看到了 URL 资源，就是此配置项没有置为 false）
+        enabled: false
+      ##使用nacos配置中心存储限流规则
+      datasource:
+        ds0:
+          nacos:
+            rule-type: gw-flow
+    gateway:
+      ##开启网关日志监控
+      httpserver:
+        wiretap: true
+      ##开启指标监控
+#      metrics:
+#        enabled: true
+#        tags:
+#          path:
+#            enabled: true
+      predicate:
+        weight:
+          enabled: false
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowCredentials: true
+            allowedOriginPatterns: "*"
+            allowedHeaders: "*"
+            allowedMethods: "*"
+      httpclient:
+        ssl:
+          useInsecureTrustManager: true
+        connect-timeout: 1000
+        response-timeout: 5s
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: oauth2-auth-server
+          uri: lb://oauth2-auth-server
+          predicates:
+            - Path=/oauth/**,/.well-known/jwks.json
+        - id: oauth2-resource-server
+          uri: lb://oauth2-resource-server
+          predicates:
+            - Path=/api/v5/user
+        - id: yingluo-admin
+          uri: lb://yingluo-admin
+          predicates:
+            - Path=/admin/**
+          filters:
+            - StripPrefix=1
+        - id: prefixpath_route
+          uri: lb://yingluo-web
+          predicates:
+            - Path=/api/test
+          filters:
+            - RedirectTo=302, https://www.baidu.com, true
+
+management:
+  endpoint:
+    gateway:
+      enabled: true
+
+nacos:
+  router:
+    data:
+      id: yingluo-gateway-routes
+
+#接口白名单
+security:
+  ignore:
+    ##普通接口白名单
+    whiteUrl:
+      - "/api/auth/login"
+      - "/api/web/**"
+    ##登录用户接口白名单
+    loginUserWhiteUrls:
+      - "/api/xxx"
+
+# knife4j配置
+knife4j:
+  gateway:
+    enabled: true
+    # 指定服务发现的模式聚合微服务文档，并且是默认`default`分组
+    strategy: manual
+    routes:
+      - name: web服务
+        service-name: yingluo-web
+        url: /api/web/v3/api-docs?group=default
+        order: 1
+        context-path: /api/web
+      - name: 认证服务
+        service-name: yingluo-auth
+        url: /api/auth/v3/api-docs?group=default
+        order: 3
+        context-path: /api/auth
+      - name: 订单服务
+        service-name: yingluo-order
+        url: /api/order/v3/api-docs?group=default
+        order: 4
+        context-path: /api/order
+      - name: seata服务
+        service-name: yingluo-seata
+        url: /api/seata/v3/api-docs?group=default
+        order: 5
+        context-path: /api/seata
+      - name: 秒杀服务
+        service-name: yingluo-service-provider
+        url: /api/seckill/v3/api-docs?group=default
+        order: 6
+        context-path: /api/seckill
+    discover:
+      enabled: true
+      # 指定版本号(Swagger2|OpenAPI3)
+      version : openapi3
+logging:
+  level:
+    reactor.netty: info
